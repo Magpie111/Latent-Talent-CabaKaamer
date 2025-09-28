@@ -34,7 +34,6 @@
         }
 
         function extractCategory(folderName) {
-            // Assume category is everything after the leading digits (e.g., '1Nature' -> 'Nature')
             return folderName.replace(/^\d+/, '');
         }
 
@@ -46,11 +45,9 @@
             error.textContent = '';
 
             try {
-                // Step 1: Fetch list of subfolders in images/
                 const subfolders = await fetchGitHubContents(imagesPath);
                 const foldersByCategory = {};
 
-                // Group folders by category
                 for (const item of subfolders) {
                     if (item.type === 'dir') {
                         const category = extractCategory(item.name);
@@ -61,7 +58,6 @@
                     }
                 }
 
-                // Step 2: For each category, create collapsible section
                 for (const [category, folders] of Object.entries(foldersByCategory)) {
                     const details = document.createElement('details');
                     const summary = document.createElement('summary');
@@ -72,19 +68,23 @@
                     imagesContainer.className = 'images';
                     details.appendChild(imagesContainer);
 
-                    // Fetch images from each folder in this category
-                    for (const folder of folders) {
-                        const files = await fetchGitHubContents(`${imagesPath}/${folder}`);
-                        for (const file of files) {
-                            if (file.type === 'file' && /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name)) {
-                                const img = document.createElement('img');
-                                img.src = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${imagesPath}/${folder}/${file.name}`;
-                                img.alt = file.name;
-                                img.title = `${folder}/${file.name}`;
-                                imagesContainer.appendChild(img);
+                    details.addEventListener('toggle', async () => {
+                        if (details.open && !imagesContainer.hasChildNodes()) {
+                            for (const folder of folders) {
+                                const files = await fetchGitHubContents(`${imagesPath}/${folder}`);
+                                for (const file of files) {
+                                    if (file.type === 'file' && /\.(jpg|jpeg|png|gif|webp)$/i.test(file.name)) {
+                                        const img = document.createElement('img');
+                                        img.src = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${imagesPath}/${folder}/${file.name}`;
+                                        img.alt = file.name;
+                                        img.title = `${folder}/${file.name}`;
+                                        img.loading = 'lazy';
+                                        imagesContainer.appendChild(img);
+                                    }
+                                }
                             }
                         }
-                    }
+                    });
 
                     gallery.appendChild(details);
                 }
